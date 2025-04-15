@@ -49,4 +49,4 @@ po/*~
 rsconnect/
 
 # netcdf outputs
-/home/dafcluster4/Documents/GitHub/temperature_test/02_data/*/*.nc
+/02_data/**/*.nc
