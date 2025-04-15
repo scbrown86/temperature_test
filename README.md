@@ -32,7 +32,37 @@ files to be stored in a subdirectory /static
 `Proj4 string = '+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs'`
 
 #### Notes:
-CHELSA_paleo has been sourced from https://gitlabext.wsl.ch/karger/chelsa_paleo and modified to only require a single (i.e. static) mask regardless of the number of timesteps being simulated. It has also been modified to run using a maximum of 2 threads per step which permits us to run 12 steps (i.e. 1 year) in parallel when processing.
+CHELSA_paleo has been sourced from https://gitlabext.wsl.ch/karger/chelsa_paleo and modified to only require a single (i.e. static) mask regardless of the number of timesteps being simulated. 
+
+```python
+# ds1 = import_ncdf(self.INPUT + 'orog/oro_high.nc').Get_Grid(self.time)
+ds1 = import_ncdf(self.INPUT + 'orog/oro_high.nc').Get_Grid(0) #<<< use first time step only
+```
+
+It has also been modified to run using a maximum of 2 threads per step which permits us to run 12 steps (i.e. 1 year) in parallel when processing.
+
+```python
+def Load_Tool_Libraries(Verbose):
+    saga_api.SG_UI_Msg_Lock(True)
+    if os.name == 'nt':  # Windows
+        os.environ['PATH'] = os.environ['PATH'] + ';' + os.environ['SAGA_32'] + '/dll'
+        saga_api.SG_Get_Tool_Library_Manager().Add_Directory(os.environ['SAGA_32'] + '/tools', False)
+    else:  # Linux
+        saga_api.SG_Get_Tool_Library_Manager().Add_Directory('/usr/local/lib/saga/',
+                                                             False)  # Or set the Tool directory like this!
+    saga_api.SG_UI_Msg_Lock(False)
+   
+    saga_api.SG_OMP_Set_Max_Num_Threads(2)  #<<< cores hardcoded to 2
+
+    if Verbose == True:
+        print 'Python - Version ' + sys.version
+        print saga_api.SAGA_API_Get_Version()        
+        print 'number of maximum threads used: ' + str(saga_api.SG_OMP_Get_Max_Num_Threads())
+        print 'number of loaded libraries: ' + str(saga_api.SG_Get_Tool_Library_Manager().Get_Count())
+        print
+
+    return saga_api.SG_Get_Tool_Library_Manager().Get_Count()
+```
 
 CHELSA_paleo has been installed in a conda environment named `CHELSA_paleo` which will need to be activated before running the test.
 
