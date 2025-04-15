@@ -284,20 +284,18 @@ sahul_prj <- "EPSG:3395"
 #  UNIT["Meter",1.0]]'
 
 template_raster <- project(template_raster, sahul_prj, method = "near",
-                           res = 4000)
+                           res = 5000)
 template_raster
 plot(template_raster, fun = function() lines(project(land, template_raster)))
-elev <- oro_4[[1]]*1
-elev
 
-merc_template <- project(elev,
+merc_template <- project(oro_4,
                          template_raster,
                          #threads = 12,
                          use_gdal = TRUE,
                          method = "average")
 merc_template
 merc_template <- setValues(merc_template, round(values(merc_template), 1))
-plot(merc_template, col = hcl.colors(100, "Batlow"),
+plot(merc_template, col = hcl.colors(100, "Batlow"), range = c(0, 4300),
      fun = function() lines(project(land, merc_template), col = "#000000", lwd = 1.5))
 
 writeCDF(merc_template,
