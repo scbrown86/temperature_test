@@ -48,5 +48,10 @@ po/*~
 # RStudio Connect folder
 rsconnect/
 
-# netcdf outputs
+# netcdf/tif outputs & inputs
+/02_data/**/*.tif
 /02_data/**/*.nc
+/02_data/02_processed/*.nc
+/02_data/02_processed/**/*.nc
+/02_data/02_processed/**/*.tif
+/02_data/02_processed/**/*.json
