@@ -1,4 +1,9 @@
 library(terra)
+
+land <- vect(rnaturalearthhires::countries10)
+land <- crop(land, ext(106, 160, -45, 5))
+land <- aggregate(land)
+
 elev <- rast('/home/dafcluster4/Desktop/TraCE_Data/ice5g_v1.1_00.0k_1deg.nc', "orog")
 elev <- crop(rotate(elev), c(100,163,-60,10))
 elev <- ifel(elev < 0, NA, elev)
@@ -9,7 +14,17 @@ landmask
 landmask <- crop(rotate(landmask), ext(elev))
 landmask <- ifel(is.na(landmask), 1, NA) # invert
 landmask
-plot(landmask)
+
+land_cells <- landmask
+values(land_cells) <- 1:ncell(land_cells)
+plot(landmask, fun = function() lines(land))
+text(land_cells)
+
+landmask[95] <- NA
+landmask[c(42, 74,75,92,93,59,232,208)] <- 1
+
+plot(landmask, fun = function() lines(land))
+text(land_cells)
 
 landmask_fine <- project(landmask, elev, method = "near")
 plot(landmask_fine)
@@ -24,7 +39,10 @@ plot(elev_fill, fun = function() lines(as.polygons(landmask_fine)))
 
 elev_coarse <- mask(project(elev_fill, landmask, method = "average"), landmask)
 elev_coarse
-plot(elev_coarse, fun = function() lines(as.polygons(landmask)))
+plot(elev_coarse, fun = function() {
+  lines(as.polygons(landmask), lwd = 1.5)
+  lines(land)
+  })
 
 # make elev_coarse at 0.5
 elev_coarse_fine <- project(elev_coarse, disagg(landmask_fine,2, "near"), method = "near")
@@ -34,11 +52,3 @@ plot(elev_coarse_fine, fun = function() lines(as.polygons(disagg(landmask_fine,2
 
 # writeCDF
 writeCDF(elev_coarse_fine, "./02_data/01_inputs/TraCE21_elevation.nc", varname = "elevation", longname = "elevation", unit = "m", compression = 1, missval = -999, overwrite=TRUE)
-
-# zseq <- seq(as.Date("1989-12-16"), by = "-1 month", to = as.Date("1900-01-16"))
-# length(zseq)
-
-# r <- rast("/home/dafcluster4/Desktop/TraCE_Data/raw/monthly/ts/trace.36.400BP-1990CE.cam2.h0.TS.2160101-2204012.nc", "TS")[[4201:5280]]
-# time(r) <- rev(zseq)
-# r[[c(1, 1080)]]
-# plot(r[[c(1, 1080)]])
