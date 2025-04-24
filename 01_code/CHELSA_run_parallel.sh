@@ -22,4 +22,35 @@ seq $END -1 $START | parallel --bar -j 12 -k '
 
 ELAPSED=$(($(date +%s) - START_TIME))
 printf "Elapsed time: %d days %02d hours %02d min %02d sec\n" \
-    $((ELAPSED/86400)) $((ELAPSED%86400/3600)) $((ELAPSED%3600/60)) $((ELAPSED%60))
+    $((ELAPSED / 86400)) $((ELAPSED % 86400 / 3600)) $((ELAPSED % 3600 / 60)) $((ELAPSED % 60))
+
+# concatenate files when finished
+# Define the list of folder names
+
+conda deactivate
+conda activate nco_stable
+
+folders=("pr" "tas" "tasmax" "tasmin")
+
+# Loop through each folder
+for foldername in "${folders[@]}"; do
+    folder_path="$OUTPUT_DIR/$foldername"
+    if [ -d "$folder_path" ]; then
+        file_count=$(find "$folder_path" -maxdepth 1 -type f -name "*.nc" | wc -l)
+        if [ "$file_count" -eq "$END" ]; then
+            echo "Processing $foldername with 1080 files..."
+            cd "$folder_path" || {
+                echo "Failed to enter $folder_path"
+                continue
+            }
+            output_file="${folder_path}/CHELSA_${foldername}_1900_1990.nc"
+            cdo setreftime,1900-01-16,,1month -settaxis,1900-01-16,,1month -setcalendar,365_day -cat $(ls -v1 "$folder_path") "$output_file"
+            # create a text file to ensure order is correct!
+            ls -v1 "$folder_path" >input_order.txt
+        else
+            echo "Found $file_count files. Expected 1080"
+        fi
+    else
+        echo "Directory $folder_path does not exist."
+    fi
+done
