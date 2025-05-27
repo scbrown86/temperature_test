@@ -7,6 +7,7 @@ library(data.table)
 library(ggplot2)
 library(qpdf)
 library(plotrix)
+library(patchwork)
 
 setGDALconfig("GDAL_PAM_ENABLED", "FALSE")
 terraOptions(memfrac = 0.85, memmax = 50)
@@ -507,18 +508,65 @@ qpdf::pdf_combine(input = c("03_comparisons/zonal_means.pdf",
 
 regions <- unique(step_summaries_roll[["Koppen"]])
 
-delta_pr <- crop(mask(agcd_1910_1989$pr / brown_1910_1989$pr, land), land)
-delta_pr
-plot(delta_pr)
+# DELTA between BoM and Brown
+# if (FALSE) {
+#   delta_pr <- crop(mask(agcd_1910_1989$pr / brown_1910_1989$pr, land), land)
+#   delta_pr
+#   plot(delta_pr)
+#
+#   delta_tasmax <- crop(mask(agcd_1910_1989$tasmax - brown_1910_1989$tasmax, land), land)
+#   delta_tasmax
+#   plot(delta_tasmax)
+#
+#   delta_tasmin <- crop(mask(agcd_1910_1989$tasmin - brown_1980_1989$tasmin, land), land)
+#   delta_tasmin
+#   plot(delta_tasmin)
+#
+#   delta_tas <- crop(mask(agcd_1910_1989$tas - brown_1980_1989$tas, land), land)
+#   delta_tas
+#   plot(delta_tas)
+# }
 
-delta_tasmax <- crop(mask(agcd_1910_1989$tasmax - brown_1980_1989$tasmax, land), land)
-delta_tasmax
-plot(delta_tasmax)
+# DELTA between CHELSA and Brown
+## positive values mean Karger is higher
+if (TRUE) {
+  delta_pr <- crop(mask(CHELSA_Trace21_1950$pr / brown_1910_1989$pr, land), land)
+  delta_pr # > 1 == Karger wetter
+  plot(delta_pr)
 
-delta_tasmin <- crop(mask(agcd_1910_1989$tasmin - brown_1980_1989$tasmin, land), land)
-delta_tasmin
-plot(delta_tasmin)
+  delta_tasmax <- crop(mask(CHELSA_Trace21_1950$tasmax - brown_1910_1989$tasmax, land), land)
+  delta_tasmax
+  hist(delta_tasmax)
+  plot(delta_tasmax)
 
-delta_tas <- crop(mask(agcd_1910_1989$tas - brown_1980_1989$tas, land), land)
-delta_tas
-plot(delta_tas)
+  delta_tasmin <- crop(mask(CHELSA_Trace21_1950$tasmin - brown_1910_1989$tasmin, land), land)
+  delta_tasmin
+  hist(delta_tasmin)
+  plot(delta_tasmin)
+
+  delta_tas <- crop(mask(CHELSA_Trace21_1950$tas - brown_1910_1989$tas, land), land)
+  delta_tas
+  hist(delta_tas)
+  plot(delta_tas)
+}
+
+par(mfrow = c(2,2), mar = c(4,4,4,2))
+plot(delta_pr, main = "rainfall delta",
+     legend = "bottom", buffer = TRUE,
+     smooth = TRUE, box = TRUE, range = c(0.5, 2.5),
+     plg = list(cex = 0.8, bty = "n", size = c(0.5, 1),
+                tic = "through"),
+     fun = function() lines(land, col = "#000000"))
+plot(delta_tas,
+     range = c(-3, 9),
+     mar = c(5,1,1,1),
+     smooth = TRUE, box = TRUE,
+     plg = list(x = "bottom",
+                cex = 1, bty = "n",
+                size = c(0.5, 1),
+                at = seq(-3, 9),
+                title.x = 135,
+                title.y = -45,
+                labels = seq(-3, by = 0.5, l = 12),
+                tics = "out", title = "temperature delta"),
+     fun = function() lines(land, col = "#000000"))
