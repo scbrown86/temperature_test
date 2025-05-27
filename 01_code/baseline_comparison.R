@@ -7,7 +7,6 @@ library(data.table)
 library(ggplot2)
 library(qpdf)
 library(plotrix)
-library(patchwork)
 
 setGDALconfig("GDAL_PAM_ENABLED", "FALSE")
 terraOptions(memfrac = 0.85, memmax = 50)
@@ -120,7 +119,7 @@ time(chelsa_trace$pr) <- time(chelsa_trace$tasmax) <-
 chelsa_trace
 
 # Load in Koppen climate zones
-koppen <- rast("/mnt/Data/AusClim/data/processed/koppen_zones_raster.tif")
+koppen <- rast("02_data/01_inputs/koppen_zones_raster.tif")
 koppen <- project(koppen, brown$pr, method = "near")
 koppen <- mask(koppen, project(land, koppen), touches = TRUE)
 has.colors(koppen)
@@ -529,6 +528,11 @@ regions <- unique(step_summaries_roll[["Koppen"]])
 
 # DELTA between CHELSA and Brown
 ## positive values mean Karger is higher
+
+agcd <- rast("03_comparisons/agcd_1910_1989.tif")
+CHELSA_Trace21_1950 <- rast("03_comparisons/CHELSA_Trace21_1950.tif")
+brown_1910_1989 <- rast("03_comparisons/brown_1910_1989.tif")
+
 if (TRUE) {
   delta_pr <- crop(mask(CHELSA_Trace21_1950$pr / brown_1910_1989$pr, land), land)
   delta_pr # > 1 == Karger wetter
@@ -543,30 +547,164 @@ if (TRUE) {
   delta_tasmin
   hist(delta_tasmin)
   plot(delta_tasmin)
+  plot(stretch(delta_tasmin, minv = -3.5, maxv = 5.5, histeq = FALSE))
 
   delta_tas <- crop(mask(CHELSA_Trace21_1950$tas - brown_1910_1989$tas, land), land)
   delta_tas
   hist(delta_tas)
   plot(delta_tas)
 }
-
-par(mfrow = c(2,2), mar = c(4,4,4,2))
-plot(delta_pr, main = "rainfall delta",
-     legend = "bottom", buffer = TRUE,
+pdf(file = "03_comparisons/comparisons_delta.pdf",
+    width = 10, height = 9, onefile = TRUE, bg = "white")
+par(mfrow = c(2,2), mai = c(0.5,0.5,0.5,0.5), mar = c(0.5,0.5,0.5,0.5))
+{plot(delta_pr, mar = c(5,0,0.5,0),
+     buffer = TRUE,
      smooth = TRUE, box = TRUE, range = c(0.5, 2.5),
-     plg = list(cex = 0.8, bty = "n", size = c(0.5, 1),
-                tic = "through"),
+     plg = list(x = "bottom",
+                cex = 1, bty = "n",
+                size = c(0.75, 1),
+                tics = "out", title = "precipitation delta"),
      fun = function() lines(land, col = "#000000"))
-plot(delta_tas,
-     range = c(-3, 9),
-     mar = c(5,1,1,1),
+plot(rescale_raster(delta_tas, new_min = -2, new_max = 5),
+     range = c(-2, 5),
+     buffer = TRUE,
+     mar = c(5,0,0.5,0),
      smooth = TRUE, box = TRUE,
      plg = list(x = "bottom",
                 cex = 1, bty = "n",
-                size = c(0.5, 1),
-                at = seq(-3, 9),
-                title.x = 135,
-                title.y = -45,
-                labels = seq(-3, by = 0.5, l = 12),
+                size = c(0.75, 1),
+                at = seq(-2, 5),
                 tics = "out", title = "temperature delta"),
      fun = function() lines(land, col = "#000000"))
+plot(rescale_raster(delta_tasmax, new_min = -3, new_max = 6),
+     range = c(-3, 6),
+     buffer = TRUE,
+     mar = c(5,0,0.5,0),
+     smooth = TRUE, box = TRUE,
+     plg = list(x = "bottom",
+                cex = 1, bty = "n",
+                size = c(0.75, 1),
+                at = seq(-3, 6),
+                #labels = c(-3, "", -2, "", -1, "", 0, "", 1, "", 2, "", 3),
+                tics = "out", title = "max temperature delta"),
+     fun = function() lines(land, col = "#000000"))
+plot(rescale_raster(delta_tasmin, new_min = -2, new_max = 5),
+     range = c(-2, 5),
+     buffer = TRUE,
+     mar = c(5,0,0.5,0),
+     smooth = TRUE, box = TRUE,
+     plg = list(x = "bottom",
+                cex = 1, bty = "n",
+                size = c(0.75, 1),
+                at = seq(-2, 5),
+                tics = "out", title = "min temperature delta"),
+     fun = function() lines(land, col = "#000000"))
+}
+dev.off()
+
+# common mask to mask all three datasets
+comm <- mask(c(agcd, brown_1910_1989, CHELSA_Trace21_1950), land)
+names(comm) <- c(paste0(rep("agcd_", 4), c("pr", "tasmin", "tasmax", "tas")),
+                 paste0(rep("brown_", 4), c("pr", "tas", "tasmax", "tasmin")),
+                 paste0(rep("karger_", 4), c("pr", "tasmax", "tasmin", "tas")))
+comm_mask <- app(comm, "all", na.rm = TRUE)
+comm_mask; plot(comm_mask)
+
+koppen <- mask(koppen, comm_mask)
+
+{taylor_from_spatraster_zones(obs = comm$karger_tas,
+                             mod = comm$brown_tas,
+                             zones = koppen,
+                             add = FALSE,
+                             zone_names = c("Temperate", "Grassland", "Desert",
+                                            "Subtropical", "Tropical", "Equatorial"),
+                             col_palette = c("#1f78b4", "#ffff99",
+                                             "#b15828", "#b2df8a",
+                                             "#34a02c", "#cab2d6"),
+                             pch = 17, pcex = 1.5,
+                             sig_digits = 3,
+                             main = NULL)
+taylor_from_spatraster_zones(obs = comm$karger_tas,
+                             mod = comm$brown_tas,
+                             zones = NULL,
+                             add = TRUE,
+                             sig_digits = 3,
+                             pch = 17, pcex = 1.5,
+                             main = NULL, col = "black")
+taylor_from_spatraster_zones(obs = comm$karger_tasmin,
+                             mod = comm$brown_tasmin,
+                             zones = koppen,
+                             add = TRUE,
+                             sig_digits = 3,
+                             zone_names = c("Temperate", "Grassland", "Desert",
+                                            "Subtropical", "Tropical", "Equatorial"),
+                             col_palette = c("#1f78b4", "#ffff99",
+                                             "#b15828", "#b2df8a",
+                                             "#34a02c", "#cab2d6"),
+                             pch = 18, pcex = 2,
+                             main = NULL)
+taylor_from_spatraster_zones(obs = comm$karger_tasmin,
+                             mod = comm$brown_tasmin,
+                             zones = NULL,
+                             add = TRUE,
+                             sig_digits = 3,
+                             pch = 18, pcex = 2,
+                             main = NULL, col = "black")
+taylor_from_spatraster_zones(obs = comm$karger_tasmax,
+                             mod = comm$brown_tasmax,
+                             zones = koppen,
+                             add = TRUE,
+                             sig_digits = 3,
+                             zone_names = c("Temperate", "Grassland", "Desert",
+                                            "Subtropical", "Tropical", "Equatorial"),
+                             col_palette = c("#1f78b4", "#ffff99",
+                                             "#b15828", "#b2df8a",
+                                             "#34a02c", "#cab2d6"),
+                             pch = 15, pcex = 1.5,
+                             main = NULL)
+taylor_from_spatraster_zones(obs = comm$karger_tasmax,
+                             mod = comm$brown_tasmax,
+                             zones = NULL,
+                             add = TRUE,
+                             sig_digits = 3,
+                             pch = 15, pcex = 1.5, col = "black",
+                             main = NULL)
+taylor_from_spatraster_zones(obs = comm$agcd_pr,
+                             mod = comm$brown_pr,
+                             zones = koppen,
+                             add = TRUE,
+                             sig_digits = 6,
+                             zone_names = c("Temperate", "Grassland", "Desert",
+                                            "Subtropical", "Tropical", "Equatorial"),
+                             col_palette = c("#1f78b4", "#ffff99",
+                                             "#b15828", "#b2df8a",
+                                             "#34a02c", "#cab2d6"),
+                             pch = 19, pcex = 1.5,
+                             main = NULL)
+taylor_from_spatraster_zones(obs = comm$agcd_pr,
+                             mod = comm$brown_pr,
+                             zones = NULL,
+                             sig_digits = 6,
+                             add = TRUE,
+                             pch = 19, pcex = 1.5, col = "black",
+                             main = NULL)
+legend(x = 0.07, y = 1.85,
+       legend = c("precipitation", "mean temperature",
+                  "minimum temperature", "maximum temperature"),
+       col = "black",
+       pch = c(19, 17, 18, 15), box.lwd = 0,box.lty = 0,box.col = NA,
+       pt.cex = c(1.5, 1.5, 2, 1.5),
+       ncol = 1)
+}
+# Save current par settings
+old_par <- par(no.readonly = TRUE)
+# Add inset using par(fig = ...) and par(new = TRUE)
+par(fig = c(0.55,1.0, 0.55, 1.0), new = TRUE)
+# Plot the map: could be zones, obs, etc.
+plot(crop(koppen, land), axes = FALSE,
+     buffer = TRUE,
+     legend = TRUE, box = FALSE,
+     plg = list(x = 154, y = -10,
+                cex = 1,
+                title = "Koppen zone"))
+par(old_par)
