@@ -55,3 +55,9 @@ rsconnect/
 /02_data/02_processed/**/*.nc
 /02_data/02_processed/**/*.tif
 /02_data/02_processed/**/*.json
+03_comparisons/agcd_1910_1989_monthly.tif
+03_comparisons/agcd_1980_1989_monthly.tif
+03_comparisons/brown_1910_1989_monthly.tif
+03_comparisons/brown_1980_1989_monthly.tif
+03_comparisons/CHELSA_1980_1989_monthly.tif
+03_comparisons/CHELSA_Trace21_1950_monthly.tif

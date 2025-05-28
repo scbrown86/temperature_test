@@ -133,134 +133,110 @@ plot(koppen)
 koppen
 plot(koppen)
 
-# iterate through each dataset and create averages for periods of overlap
-brown_1910_1989 <- pblapply(seq_along(brown), function(sd) {
+# monthly climatological averages
+brown_1910_1989_m <- pblapply(seq_along(brown), function(sd) {
   rsd <- brown[[sd]]
   rsd <- rsd[[which(format(time(rsd), "%Y") >= 1910)]]
-  # annual average
-  rsd <- tapp(rsd, "years", "mean")
-  # time avg
-  rsd <- app(rsd, mean, na.rm = TRUE)
+  rsd <- tapp(rsd, "months", "mean")
   units(rsd) <- units(brown[[sd]])[1]
+  if (units(brown[[sd]])[1] %in% c("K", "k", "kelvin")) {
+    rsd <- setValues(rsd, values(rsd) - 273.15)
+    units(rsd) <- "deg_C"
+  }
   varnames(rsd) <- varnames(brown[[sd]])[1]
-  names(rsd) <- varnames(brown[[sd]])[1]
-  time(rsd) <- 1950
+  names(rsd) <- paste0(month.abb, "_", varnames(brown[[sd]])[1])
+  time(rsd, tstep = "months") <- seq(as.Date("1950-01-16"), by = "month", l = 12)
   crs(rsd) <- "EPSG:4326"
   rsd
 })
-brown_1910_1989 <- rast(brown_1910_1989)
-brown_1910_1989[[2:4]] <- setValues(x = brown_1910_1989[[2:4]],
-                                    values = values(brown_1910_1989[[2:4]]) - 273.15)
-plot(crop(mask(brown_1910_1989, land), land), fun = function() lines(land))
+brown_1910_1989_m <- rast(brown_1910_1989_m)
+brown_1910_1989_m
 
-brown_1980_1989 <- pblapply(seq_along(brown), function(sd) {
+brown_1980_1989_m <- pblapply(seq_along(brown), function(sd) {
   rsd <- brown[[sd]]
   rsd <- rsd[[which(format(time(rsd), "%Y") >= 1980)]]
-  # annual average
-  rsd <- tapp(rsd, "years", "mean")
-  # time avg
-  rsd <- app(rsd, mean, na.rm = TRUE)
+  rsd <- tapp(rsd, "months", "mean")
   units(rsd) <- units(brown[[sd]])[1]
+  if (units(brown[[sd]])[1] %in% c("K", "k", "kelvin")) {
+    rsd <- setValues(rsd, values(rsd) - 273.15)
+    units(rsd) <- "deg_C"
+  }
   varnames(rsd) <- varnames(brown[[sd]])[1]
-  names(rsd) <- varnames(brown[[sd]])[1]
-  time(rsd) <- 1985
+  names(rsd) <- paste0(month.abb, "_", varnames(brown[[sd]])[1])
+  time(rsd, tstep = "months") <- seq(as.Date("1985-01-16"), by = "month", l = 12)
   crs(rsd) <- "EPSG:4326"
   rsd
 })
-brown_1980_1989 <- rast(brown_1980_1989)
-brown_1980_1989[[2:4]] <- setValues(x = brown_1980_1989[[2:4]],
-                                    values = values(brown_1980_1989[[2:4]]) - 273.15)
-plot(crop(mask(brown_1980_1989, land), land), fun = function() lines(land))
+brown_1980_1989_m <- rast(brown_1980_1989_m)
+brown_1980_1989_m
 
-agcd_1910_1989 <- pblapply(seq_along(agcd), function(sd) {
+agcd_1910_1989_m <- pblapply(seq_along(agcd), function(sd) {
   rsd <- agcd[[sd]]
   rsd <- rsd[[which(format(time(rsd), "%Y") >= 1910)]]
-  # annual average
-  rsd <- tapp(rsd, "years", "mean")
-  # time avg
-  rsd <- app(rsd, mean, na.rm = TRUE)
+  rsd <- tapp(rsd, "months", "mean")
   units(rsd) <- c("kg m-2 s-1", "deg_C", "deg_C", "deg_C")[sd]
   varnames(rsd) <- c("pr", "tasmin", "tasmax", "tas")[sd]
-  names(rsd) <- c("pr", "tasmin", "tasmax", "tas")[sd]
-  time(rsd) <- 1950
+  names(rsd) <- paste0(month.abb, "_", c("pr", "tasmin", "tasmax", "tas")[sd])
+  time(rsd, tstep = "months") <- seq(as.Date("1950-01-16"), by = "month", l = 12)
   crs(rsd) <- "EPSG:4326"
   rsd
 })
-agcd_1910_1989 <- rast(agcd_1910_1989)
-agcd_1910_1989
-plot(crop(mask(agcd_1910_1989, land), land), fun = function() lines(land))
+agcd_1910_1989_m <- rast(agcd_1910_1989_m)
+agcd_1910_1989_m
 
-agcd_1980_1989 <- pblapply(seq_along(agcd), function(sd) {
+agcd_1980_1989_m <- pblapply(seq_along(agcd), function(sd) {
   rsd <- agcd[[sd]]
   rsd <- rsd[[which(format(time(rsd), "%Y") >= 1980)]]
-  # annual average
-  rsd <- tapp(rsd, "years", "mean")
-  # time avg
-  rsd <- app(rsd, mean, na.rm = TRUE)
+  rsd <- tapp(rsd, "months", "mean")
   units(rsd) <- c("kg m-2 s-1", "deg_C", "deg_C", "deg_C")[sd]
   varnames(rsd) <- c("pr", "tasmin", "tasmax", "tas")[sd]
-  names(rsd) <- c("pr", "tasmin", "tasmax", "tas")[sd]
-  time(rsd) <- 1985
+  names(rsd) <- paste0(month.abb, "_", c("pr", "tasmin", "tasmax", "tas")[sd])
+  time(rsd, tstep = "months") <- seq(as.Date("1985-01-16"), by = "month", l = 12)
   crs(rsd) <- "EPSG:4326"
   rsd
 })
-agcd_1980_1989 <- rast(agcd_1980_1989)
-agcd_1980_1989
-plot(crop(mask(agcd_1980_1989, land), land), fun = function() lines(land))
+agcd_1980_1989_m <- rast(agcd_1980_1989_m)
+agcd_1980_1989_m
 
-plot(
-  crop(mask(brown_1910_1989[[c("tas", "tasmax", "tasmin")]], land), land) -
-    crop(mask(agcd_1910_1989[[c("tas", "tasmax", "tasmin")]], land), land))
-
-plot(
-  crop(mask(brown_1910_1989[[c("pr")]], land), land) /
-    crop(mask(agcd_1910_1989[[c("pr")]], land), land))
-
-CHELSA_1980_1989 <- pblapply(seq_along(chelsa_12), function(sd) {
+CHELSA_1980_1989_m <- pblapply(seq_along(chelsa_12), function(sd) {
   rsd <- chelsa_12[[sd]]
-  # annual average
-  rsd <- tapp(rsd, "years", "mean")
-  # time avg
-  rsd <- app(rsd, mean, na.rm = TRUE)
+  rsd <- tapp(rsd, "months", "mean")
   units(rsd) <- c("kg m-2 s-1", "deg_C", "deg_C", "deg_C")[sd]
   varnames(rsd) <- c("pr", "tas", "tasmax", "tasmin")[sd]
-  names(rsd) <- c("pr", "tas", "tasmax", "tasmin")[sd]
-  time(rsd) <- 1985
+  names(rsd) <- paste0(month.abb, "_", c("pr", "tas", "tasmax", "tasmin")[sd])
+  time(rsd, tstep = "months") <- seq(as.Date("1985-01-16"), by = "month", l = 12)
   crs(rsd) <- "EPSG:4326"
   rsd
 })
-CHELSA_1980_1989 <- rast(CHELSA_1980_1989)
-CHELSA_1980_1989
-plot(crop(mask(CHELSA_1980_1989, land), land), fun = function() lines(land))
+CHELSA_1980_1989_m <- rast(CHELSA_1980_1989_m)
+CHELSA_1980_1989_m
 
-CHELSA_Trace21_1950 <- pblapply(seq_along(chelsa_trace), function(sd) {
+CHELSA_Trace21_1950_m <- pblapply(seq_along(chelsa_trace), function(sd) {
   rsd <- chelsa_trace[[sd]]
-  # time avg (all 1950)
-  rsd <- app(rsd, mean, na.rm = TRUE)
+  rsd <- tapp(rsd, "months", "mean")
   units(rsd) <- c("kg m-2 s-1", "deg_C", "deg_C", "deg_C")[sd]
   varnames(rsd) <- c("pr", "tasmax", "tasmin", "tas")[sd]
-  names(rsd) <- c("pr", "tasmax", "tasmin", "tas")[sd]
-  time(rsd) <- 1950
+  names(rsd) <- paste0(month.abb, "_", c("pr", "tasmax", "tasmin", "tas")[sd])
+  time(rsd, tstep = "months") <- seq(as.Date("1950-01-16"), by = "month", l = 12)
   crs(rsd) <- "EPSG:4326"
   rsd
 })
-CHELSA_Trace21_1950 <- rast(CHELSA_Trace21_1950)
-CHELSA_Trace21_1950
-plot(crop(mask(CHELSA_Trace21_1950, land), land), fun = function() lines(land))
+CHELSA_Trace21_1950_m <- rast(CHELSA_Trace21_1950_m)
+CHELSA_Trace21_1950_m
 
 # save each raster
-writeRaster(brown_1910_1989,
-            filename = "03_comparisons/brown_1910_1989.tif")
-writeRaster(brown_1980_1989,
-            filename = "03_comparisons/brown_1980_1989.tif")
-writeRaster(agcd_1910_1989,
-            filename = "03_comparisons/agcd_1910_1989.tif")
-writeRaster(agcd_1980_1989,
-            filename = "03_comparisons/agcd_1980_1989.tif")
-writeRaster(CHELSA_1980_1989,
-            filename = "03_comparisons/CHELSA_1980_1989.tif")
-writeRaster(CHELSA_Trace21_1950,
-            filename = "03_comparisons/CHELSA_Trace21_1950.tif")
+writeRaster(brown_1910_1989_m,
+            filename = "03_comparisons/brown_1910_1989_monthly.tif")
+writeRaster(brown_1980_1989_m,
+            filename = "03_comparisons/brown_1980_1989_monthly.tif")
+writeRaster(agcd_1910_1989_m,
+            filename = "03_comparisons/agcd_1910_1989_monthly.tif")
+writeRaster(agcd_1980_1989_m,
+            filename = "03_comparisons/agcd_1980_1989_monthly.tif")
+writeRaster(CHELSA_1980_1989_m,
+            filename = "03_comparisons/CHELSA_1980_1989_monthly.tif")
+writeRaster(CHELSA_Trace21_1950_m,
+            filename = "03_comparisons/CHELSA_Trace21_1950_monthly.tif")
 
 # iterate through each dataset and extract monthly averages and SD for each zone
 source("01_code/00_functions/koppen_summary.R")
@@ -528,28 +504,28 @@ regions <- unique(step_summaries_roll[["Koppen"]])
 
 # DELTA between CHELSA and Brown
 ## positive values mean Karger is higher
-
-agcd <- rast("03_comparisons/agcd_1910_1989.tif")
-CHELSA_Trace21_1950 <- rast("03_comparisons/CHELSA_Trace21_1950.tif")
-brown_1910_1989 <- rast("03_comparisons/brown_1910_1989.tif")
+source("01_code/00_functions/raster_to_sds.R")
+agcd <- split_raster_by_variable(rast("03_comparisons/agcd_1910_1989_monthly.tif"))
+agcd
+CHELSA_Trace21_1950 <- split_raster_by_variable(rast("03_comparisons/CHELSA_Trace21_1950_monthly.tif"))
+brown_1910_1989 <- split_raster_by_variable(rast("03_comparisons/brown_1910_1989_monthly.tif"))
 
 if (TRUE) {
-  delta_pr <- crop(mask(CHELSA_Trace21_1950$pr / brown_1910_1989$pr, land), land)
+  delta_pr <- crop(mask(app(CHELSA_Trace21_1950$pr, mean) / app(brown_1910_1989$pr, mean), land), land)
   delta_pr # > 1 == Karger wetter
   plot(delta_pr)
 
-  delta_tasmax <- crop(mask(CHELSA_Trace21_1950$tasmax - brown_1910_1989$tasmax, land), land)
+  delta_tasmax <- crop(mask(app(CHELSA_Trace21_1950$tasmax, mean) - app(brown_1910_1989$tasmax, mean), land), land)
   delta_tasmax
   hist(delta_tasmax)
   plot(delta_tasmax)
 
-  delta_tasmin <- crop(mask(CHELSA_Trace21_1950$tasmin - brown_1910_1989$tasmin, land), land)
+  delta_tasmin <- crop(mask(app(CHELSA_Trace21_1950$tasmin, mean) - app(brown_1910_1989$tasmin, mean), land), land)
   delta_tasmin
   hist(delta_tasmin)
   plot(delta_tasmin)
-  plot(stretch(delta_tasmin, minv = -3.5, maxv = 5.5, histeq = FALSE))
 
-  delta_tas <- crop(mask(CHELSA_Trace21_1950$tas - brown_1910_1989$tas, land), land)
+  delta_tas <- crop(mask(app(CHELSA_Trace21_1950$tas, mean) - app(brown_1910_1989$tas, mean), land), land)
   delta_tas
   hist(delta_tas)
   plot(delta_tas)
@@ -603,15 +579,20 @@ plot(rescale_raster(delta_tasmin, new_min = -2, new_max = 5),
 dev.off()
 
 # common mask to mask all three datasets
-comm <- mask(c(agcd, brown_1910_1989, CHELSA_Trace21_1950), land)
-names(comm) <- c(paste0(rep("agcd_", 4), c("pr", "tasmin", "tasmax", "tas")),
-                 paste0(rep("brown_", 4), c("pr", "tas", "tasmax", "tasmin")),
-                 paste0(rep("karger_", 4), c("pr", "tasmax", "tasmin", "tas")))
-comm_mask <- app(comm, "all", na.rm = TRUE)
+comm <- c(agcd$pr[[1]], brown_1910_1989$pr[[1]], CHELSA_Trace21_1950$pr[[1]],
+          agcd$tas[[1]], brown_1910_1989$tas[[1]], CHELSA_Trace21_1950$tas[[1]],
+          agcd$tasmin[[1]], brown_1910_1989$tasmin[[1]], CHELSA_Trace21_1950$tasmin[[1]],
+          agcd$tasmax[[1]], brown_1910_1989$tasmax[[1]], CHELSA_Trace21_1950$tasmax[[1]])
+comm_sum <- app(comm, function(i) sum(!is.na(i)))
+comm_sum <- ifel(comm_sum == 12, 1, NA)
+comm_mask <- mask(comm_sum, land)
 comm_mask; plot(comm_mask)
 
 koppen <- mask(koppen, comm_mask)
 
+source("01_code/00_functions/spatrast_to_taylor.R")
+
+#### ZONAL TAYLOR ####
 {taylor_from_spatraster_zones(obs = comm$karger_tas,
                              mod = comm$brown_tas,
                              zones = koppen,
@@ -708,3 +689,113 @@ plot(crop(koppen, land), axes = FALSE,
                 cex = 1,
                 title = "Koppen zone"))
 par(old_par)
+
+
+#### MONTHLY TAYLOR ####
+# Define color palette
+colours <- c(
+  Rainfall = "#0072B2",
+  AirTemp = "#D55E00",
+  MinTemp = "#009E73",
+  MaxTemp = "#CC79A7")
+pdf(file = "03_comparisons/comparisons_taylor.pdf",
+    width = 8, height = 8, onefile = TRUE, bg = "white")
+par(mai = c(0.5,0.5,0.5,0.5), mar = c(0.5,0.5,0.5,0.5))
+{taylor_from_sds_monthly(obs_sds = agcd,
+                        mod_sds = brown_1910_1989,
+                        var_name = "tas",
+                        col_palette = colours[2],
+                        use_mask = comm_mask,
+                        zones = NULL, add = FALSE,
+                        sig_digits = 3, pch = 19,
+                        main = "", ref.sd = TRUE,
+                        sd.method = "population",
+                        normalize = TRUE, mar = c(4,4,0,0))
+taylor_from_sds_monthly(obs_sds = agcd,
+                        mod_sds = brown_1910_1989,
+                        var_name = "tasmin",
+                        col_palette = colours[3],
+                        use_mask = comm_mask,
+                        zones = NULL, add = TRUE,
+                        sig_digits = 3, pch = 19,
+                        main = "", ref.sd = TRUE,
+                        sd.method = "population",
+                        normalize = TRUE, mar = c(4,4,0,0))
+taylor_from_sds_monthly(obs_sds = agcd,
+                        mod_sds = brown_1910_1989,
+                        var_name = "tasmax",
+                        col_palette = colours[4],
+                        use_mask = comm_mask,
+                        zones = NULL, add = TRUE,
+                        sig_digits = 3, pch = 19,
+                        main = "", ref.sd = TRUE,
+                        sd.method = "population",
+                        normalize = TRUE, mar = c(4,4,0,0))
+taylor_from_sds_monthly(obs_sds = agcd,
+                        mod_sds = brown_1910_1989,
+                        var_name = "pr",
+                        col_palette = colours[1],
+                        use_mask = comm_mask,
+                        zones = NULL, add = TRUE,
+                        sig_digits = 3, pch = 19,
+                        main = "", ref.sd = TRUE,
+                        sd.method = "population",
+                        normalize = TRUE, mar = c(4,4,0,0))
+
+taylor_from_sds_monthly(obs_sds = CHELSA_Trace21_1950,
+                        mod_sds = brown_1910_1989,
+                        var_name = "tas",
+                        col_palette = colours[2],
+                        use_mask = comm_mask,
+                        zones = NULL, add = TRUE,
+                        sig_digits = 3, pch = 17,
+                        main = "", ref.sd = TRUE,
+                        sd.method = "population",
+                        normalize = TRUE, mar = c(4,4,0,0))
+taylor_from_sds_monthly(obs_sds = CHELSA_Trace21_1950,
+                        mod_sds = brown_1910_1989,
+                        var_name = "tasmin",
+                        col_palette = colours[3],
+                        use_mask = comm_mask,
+                        zones = NULL, add = TRUE,
+                        sig_digits = 3, pch = 17,
+                        main = "", ref.sd = TRUE,
+                        sd.method = "population",
+                        normalize = TRUE, mar = c(4,4,0,0))
+taylor_from_sds_monthly(obs_sds = CHELSA_Trace21_1950,
+                        mod_sds = brown_1910_1989,
+                        var_name = "tasmax",
+                        col_palette = colours[4],
+                        use_mask = comm_mask,
+                        zones = NULL, add = TRUE,
+                        sig_digits = 3, pch = 17,
+                        main = "", ref.sd = TRUE,
+                        sd.method = "population",
+                        normalize = TRUE, mar = c(4,4,0,0))
+taylor_from_sds_monthly(obs_sds = CHELSA_Trace21_1950,
+                        mod_sds = brown_1910_1989,
+                        var_name = "pr",
+                        col_palette = colours[1],
+                        use_mask = comm_mask,
+                        zones = NULL, add = TRUE,
+                        sig_digits = 3, pch = 17,
+                        main = "", ref.sd = TRUE,
+                        sd.method = "population",
+                        normalize = TRUE, mar = c(4,4,0,0))
+legend(x = 0.07, y = 1.5,
+       legend = c("precipitation", "mean temperature",
+                  "minimum temperature", "maximum temperature"),
+       col = colours,
+       pch = 19, box.lwd = 0,box.lty = 0,box.col = NA,
+       pt.cex = 1.5,
+       ncol = 1)
+legend(x = 0.07, y = 1.25,
+       legend = c("Aust. gridded climate data",
+                  "CHELSA-TraCE21k"),
+       col = "black",
+       pch = c(19, 17), box.lwd = 0,box.lty = 0,box.col = NA,
+       pt.cex = 1.5, ncol = 1)
+mtext("*each dot represents a single month averaged over 1910-1989",
+      side = 3, adj = 0.9, outer = FALSE, line = -2, cex = 0.75)
+}
+dev.off()

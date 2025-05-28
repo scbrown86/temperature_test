@@ -12,9 +12,6 @@ taylor_from_spatraster <- function(obs, mod, add = FALSE, ...) {
   invisible(df)
 }
 
-library(terra)
-library(plotrix)
-
 taylor_from_spatraster_zones <- function(obs, mod, zones = NULL, add = FALSE,
                                          zone_names = NULL, col_palette = NULL,
                                          doagg  = NULL, sig_digits = NULL,
@@ -105,6 +102,99 @@ taylor_from_spatraster_zones <- function(obs, mod, zones = NULL, add = FALSE,
   # Return list of zone-wise data frames invisibly
   invisible(results)
 }
+
+taylor_from_sds_monthly <- function(obs_sds, mod_sds, var_name, zones = NULL,
+                                    use_mask = NULL,
+                                    add = FALSE, col_palette = NULL,
+                                    sig_digits = NULL, zone_names = NULL,
+                                    doagg = NULL, ...) {
+  # ----- Checks -----
+  if (!inherits(obs_sds, "SpatRasterDataset") || !inherits(mod_sds, "SpatRasterDataset")) {
+    stop("Both 'obs_sds' and 'mod_sds' must be terra::sds objects.")
+  }
+  if (!(var_name %in% names(obs_sds)) || !(var_name %in% names(mod_sds))) {
+    stop("The specified 'var_name' must be present in both SDS objects.")
+  }
+  if (is.null(col_palette)) {
+    col_palette <- grDevices::rainbow(12)
+  }
+  get_color <- function(i) {
+    if (is.null(col_palette)) return("black")
+    if (length(col_palette) > 1) return(col_palette[i])
+    return(col_palette)
+  }
+
+  round_sig <- function(x) {
+    if (is.null(sig_digits)) x else signif(x, sig_digits)
+  }
+
+  # Extract var from each sds and mask if needed
+  obs_stack <- obs_sds[[var_name]]
+  mod_stack <- mod_sds[[var_name]]
+    if (!is.null(use_mask)) {
+    obs_stack <- mask(obs_stack, use_mask)
+    mod_stack <- mask(mod_stack, use_mask)
+  }
+  # obs_stack and mod_stack should each be SpatRaster with 12 layers
+  if (terra::nlyr(obs_stack) != 12 || terra::nlyr(mod_stack) != 12) {
+    stop("Expected 12 layers per stack for 12 months. Check input SDS structure.")
+  }
+  month_labels <- month.abb
+  plot_index <- 1  # to control `add` to existing plot
+
+  for (i in 1:12) {
+    obs_layer <- obs_stack[[i]]
+    mod_layer <- mod_stack[[i]]
+
+    if (!is.null(zones)) {
+      # Zonal version
+      zone_vals  <- sort(unique(na.omit(values(zones))))
+      n_zones    <- length(zone_vals)
+      for (z in seq_along(zone_vals)) {
+        zval  <- zone_vals[z]
+        zmask <- ifel(zones == zval, 1, NA)
+        obs_masked <- mask(obs_layer, zmask)
+        mod_masked <- mask(mod_layer, zmask)
+        if (!is.null(doagg)) {
+          obs_masked <- terra::aggregate(obs_masked, fact = doagg, na.rm = TRUE)
+          mod_masked <- terra::aggregate(mod_masked, fact = doagg, na.rm = TRUE)
+        }
+        obs_vals <- values(obs_masked, mat = FALSE)
+        mod_vals <- values(mod_masked, mat = FALSE)
+        valid    <- complete.cases(obs_vals, mod_vals)
+        obs_clean <- round_sig(obs_vals[valid])
+        mod_clean <- round_sig(mod_vals[valid])
+        if (length(obs_clean) < 2L) {
+          warning(sprintf("Month %s / Zone %s skipped: insufficient data.", month_labels[i], zval))
+          next
+        }
+        taylor.diagram(obs_clean, mod_clean,
+                       add = add || (plot_index > 1L),
+                       col = get_color(i),
+                       ...)
+        plot_index <- plot_index + 1
+      }
+    } else {
+      # Global version
+      obs_vals <- values(obs_layer, mat = FALSE)
+      mod_vals <- values(mod_layer, mat = FALSE)
+      valid    <- complete.cases(obs_vals, mod_vals)
+      obs_clean <- round_sig(obs_vals[valid])
+      mod_clean <- round_sig(mod_vals[valid])
+      if (length(obs_clean) < 2L) {
+        warning(sprintf("Month %s skipped: insufficient valid data.", month_labels[i]))
+        next
+      }
+      taylor.diagram(obs_clean, mod_clean,
+                     add  = add || (plot_index > 1L),
+                     col = get_color(i),
+                     ...)
+      plot_index <- plot_index + 1
+    }
+  }
+  invisible(NULL)
+}
+
 
 taylor_diagram <- function (ref, model, add = FALSE, col = "red", pch = 19, pos.cor = TRUE,
                             xlab = "Standard deviation", ylab = "", main = "Taylor Diagram",
@@ -293,11 +383,11 @@ taylor_diagram <- function (ref, model, add = FALSE, col = "red", pch = 19, pos.
   invisible(oldpar)
 }
 
-sig_digits <- function(x) {
-  x <- signif(x, 11)
-  x_str <- format(x, scientific = TRUE)
-  parts <- unlist(strsplit(x_str, "e"))
-  digits <- gsub("\\.", "", parts[1])
-  digits <- gsub("^0+", "", digits)
-  nchar(digits)
-}
+# sig_digits <- function(x) {
+#   x <- signif(x, 11)
+#   x_str <- format(x, scientific = TRUE)
+#   parts <- unlist(strsplit(x_str, "e"))
+#   digits <- gsub("\\.", "", parts[1])
+#   digits <- gsub("^0+", "", digits)
+#   nchar(digits)
+# }
