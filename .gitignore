@@ -61,3 +61,4 @@ rsconnect/
 03_comparisons/brown_1980_1989_monthly.tif
 03_comparisons/CHELSA_1980_1989_monthly.tif
 03_comparisons/CHELSA_Trace21_1950_monthly.tif
+scratch/*.tif
