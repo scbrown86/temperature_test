@@ -11,7 +11,7 @@ ncremap -g /home/dafcluster4/Documents/GitHub/temperature_test/02_data/00_maps/s
 ncremap -a bilinear -V Z3 --preserve=mean -R '--rgn_dst --rnr_thr=0.0' -g /home/dafcluster4/Documents/GitHub/temperature_test/02_data/00_maps/sahul_coarse.nc -s ./raw/monthly/others/trace.36.400BP-1990CE.cam2.h0.Z3.2160101-2204012.nc -m /home/dafcluster4/Documents/GitHub/temperature_test/02_data/00_maps/trace_to_sahul_coarse_neareststod.nc -o /home/dafcluster4/Documents/GitHub/temperature_test/02_data/00_maps/temp_output.nc
 
 # remap TraCE21 data to 0.5 degree grid
-output_dir="/home/dafcluster4/Documents/GitHub/temperature_test/02_data/01_inputs/single/"
+output_dir="/home/dafcluster4/Documents/GitHub/temperature_test/02_data/01_inputs/"
 map_location="/home/dafcluster4/Documents/GitHub/temperature_test/02_data/00_maps/trace_to_sahul_coarse_neareststod.nc"
 
 for file in ./raw/monthly/*/*.nc; do
