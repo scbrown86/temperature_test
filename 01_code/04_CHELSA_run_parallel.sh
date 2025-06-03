@@ -44,7 +44,7 @@ for foldername in "${folders[@]}"; do
                 continue
             }
             output_file="${folder_path}/CHELSA_${foldername}_1900_1990.nc"
-            cdo settaxis,1900-01-16,,1month -setcalendar,365_day -cat $(ls -v1 "$folder_path") "$output_file"
+            cdo invertlat -settaxis,1900-01-16,,1month -setcalendar,365_day -cat $(ls -v1 "$folder_path") "$output_file"
             # create a text file to ensure order is correct!
             ls -v1 "$folder_path" >input_order.txt
         else

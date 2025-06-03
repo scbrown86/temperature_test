@@ -20,7 +20,7 @@ chelsa_proc <- function(variable, dir, outdir, type = "\\.tif$",
   ann_CHELSA <- pbsapply(years, function(year, ...) {
     fil.list.annual <- fil.list[grepl(pattern = year, fil.list)]
     out_fil <- file.path(outdir, sprintf("CHELSA_%s_%s_V.1.2.tif", variable, year))
-    out_filn <- file.path(outdir, sprintf("CHELSA_%s_%s_V.1.2.nc", variable, year))
+    # out_filn <- file.path(outdir, sprintf("CHELSA_%s_%s_V.1.2.nc", variable, year))
     if (file.exists(out_fil) & load_exist) {
       return(out_fil)
     }
@@ -62,16 +62,19 @@ chelsa_proc <- function(variable, dir, outdir, type = "\\.tif$",
         gdal = c("COMPRESS=LZW", "TFW=NO", "PREDICTOR=3"),
         overwrite = TRUE
       )
-      # writeCDF(chelsa, out_filn, varname = "pr", long_name = "rainfall",
-      #         unit = "kg/m2/s", zname = "time", prec = "float")
+      # writeCDF(chelsa, out_filn,
+      #   varname = "pr", long_name = "rainfall",
+      #   unit = "kg/m2/s", zname = "time", prec = "float"
+      # )
     } else if (variable %in% c("tasmin", "tasmax", "tas")) {
       writeRaster(chelsa, out_fil,
         gdal = c("COMPRESS=LZW", "TFW=NO", "PREDICTOR=3"),
         overwrite = TRUE
       )
-
-      # writeCDF(chelsa, out_filn, varname = variable, long_name = variable,
-      #         unit = "degC", zname = "time", prec = "float")
+      # writeCDF(chelsa, out_filn,
+      #   varname = variable, long_name = variable,
+      #   unit = "deg_C", zname = "time", prec = "float"
+      # )
     }
     return(out_fil)
   },
