@@ -218,5 +218,3 @@ plot(brown_corrected$tasmin, fun = function() lines(land, col = "#000000"))
 
 plot(brown$tasmax, fun = function() lines(land, col = "#000000"))
 plot(brown_corrected$tasmax, fun = function() lines(land, col = "#000000"))
-
-#### BIAS CORRECTION ####

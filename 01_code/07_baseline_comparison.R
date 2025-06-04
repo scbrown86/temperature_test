@@ -68,7 +68,9 @@ chelsa_12 <- chelsa_12[!grepl("bspline", chelsa_12)]
 vars <- sapply(chelsa_12, function(x) sub(".*CHELSA_([a-z]+)_.*", "\\1", basename(x)))
 chelsa_12 <- split(chelsa_12, vars) |>
   pblapply(function(x) {
-    r <- project(rast(x), brown$pr, method = "average", use_gdal = TRUE, threads = TRUE)
+    r <- crop(rast(x), ext(brown$pr), snap = "out")
+    r <- project(r, brown$pr,
+                 method = "average", use_gdal = TRUE, threads = TRUE)
     time(r) <- seq(as.Date("1980-01-16"), by = "month", l = nlyr(r))
     r*1
   })
@@ -95,13 +97,14 @@ pattern <- "CHELSA_TraCE21k_[a-z]+_([1-9]|1[0-2])_20_V1\\.0\\.tif"
 chelsa_fil <- chelsa_fil[grepl(pattern, chelsa_fil)]
 chelsa_fil
 
-chelsa_trace <- list(pr = crop(rast(chelsa_fil[1:12]), land),
-                     tasmax = crop(rast(chelsa_fil[13:24]), land),
-                     tasmin = crop(rast(chelsa_fil[25:36]), land))
+chelsa_trace <- list(pr = crop(rast(chelsa_fil[1:12]), ext(brown$pr), snap = "out"),
+                     tasmax = crop(rast(chelsa_fil[13:24]), ext(brown$pr), snap = "out"),
+                     tasmin = crop(rast(chelsa_fil[25:36]), ext(brown$pr), snap = "out"))
 chelsa_trace <- pblapply(chelsa_trace, function(i) {
   return(project(i, brown$pr[[1]], method = "average", use_gdal = TRUE, threads = TRUE))
 })
 sapply(chelsa_trace, function(i) plot(i[[1]]))
+chelsa_trace
 conv_rate <- (c(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31) * 24) * 3600 # mm/month to kg/ms/2
 chelsa_trace$pr <- chelsa_trace$pr / conv_rate
 units(chelsa_trace$pr) <- "kg/m2/s"
@@ -173,7 +176,7 @@ agcd_1910_1989_m <- pblapply(seq_along(agcd), function(sd) {
   rsd <- agcd[[sd]]
   rsd <- rsd[[which(format(time(rsd), "%Y") >= 1910)]]
   rsd <- tapp(rsd, "months", "mean")
-  units(rsd) <- c("kg m-2 s-1", "deg_C", "deg_C", "deg_C")[sd]
+  units(rsd) <- c("kg/m2/s", "deg_C", "deg_C", "deg_C")[sd]
   varnames(rsd) <- c("pr", "tasmin", "tasmax", "tas")[sd]
   names(rsd) <- paste0(month.abb, "_", c("pr", "tasmin", "tasmax", "tas")[sd])
   time(rsd, tstep = "months") <- seq(as.Date("1950-01-16"), by = "month", l = 12)
@@ -187,7 +190,7 @@ agcd_1980_1989_m <- pblapply(seq_along(agcd), function(sd) {
   rsd <- agcd[[sd]]
   rsd <- rsd[[which(format(time(rsd), "%Y") >= 1980)]]
   rsd <- tapp(rsd, "months", "mean")
-  units(rsd) <- c("kg m-2 s-1", "deg_C", "deg_C", "deg_C")[sd]
+  units(rsd) <- c("kg/m2/s", "deg_C", "deg_C", "deg_C")[sd]
   varnames(rsd) <- c("pr", "tasmin", "tasmax", "tas")[sd]
   names(rsd) <- paste0(month.abb, "_", c("pr", "tasmin", "tasmax", "tas")[sd])
   time(rsd, tstep = "months") <- seq(as.Date("1985-01-16"), by = "month", l = 12)
@@ -200,7 +203,7 @@ agcd_1980_1989_m
 CHELSA_1980_1989_m <- pblapply(seq_along(chelsa_12), function(sd) {
   rsd <- chelsa_12[[sd]]
   rsd <- tapp(rsd, "months", "mean")
-  units(rsd) <- c("kg m-2 s-1", "deg_C", "deg_C", "deg_C")[sd]
+  units(rsd) <- c("kg/m2/s", "deg_C", "deg_C", "deg_C")[sd]
   varnames(rsd) <- c("pr", "tas", "tasmax", "tasmin")[sd]
   names(rsd) <- paste0(month.abb, "_", c("pr", "tas", "tasmax", "tasmin")[sd])
   time(rsd, tstep = "months") <- seq(as.Date("1985-01-16"), by = "month", l = 12)
@@ -213,7 +216,7 @@ CHELSA_1980_1989_m
 CHELSA_Trace21_1950_m <- pblapply(seq_along(chelsa_trace), function(sd) {
   rsd <- chelsa_trace[[sd]]
   rsd <- tapp(rsd, "months", "mean")
-  units(rsd) <- c("kg m-2 s-1", "deg_C", "deg_C", "deg_C")[sd]
+  units(rsd) <- c("kg/m2/s", "deg_C", "deg_C", "deg_C")[sd]
   varnames(rsd) <- c("pr", "tasmax", "tasmin", "tas")[sd]
   names(rsd) <- paste0(month.abb, "_", c("pr", "tasmax", "tasmin", "tas")[sd])
   time(rsd, tstep = "months") <- seq(as.Date("1950-01-16"), by = "month", l = 12)
@@ -222,19 +225,41 @@ CHELSA_Trace21_1950_m <- pblapply(seq_along(chelsa_trace), function(sd) {
 })
 CHELSA_Trace21_1950_m <- rast(CHELSA_Trace21_1950_m)
 CHELSA_Trace21_1950_m
+par(mfrow = c(2, 2))
+plot(crop(mask(brown_1980_1989_m[[1]],land), land), main = "brown")
+plot(crop(mask(agcd_1980_1989_m[[1]], land),land), main = "AGCD")
+plot(crop(mask(CHELSA_1980_1989_m[[1]],land),land), main = "CHELSA")
+plot(crop(mask(CHELSA_Trace21_1950_m[[1]],land),land), main = "CHELSA-TraCE")
+
+plot(crop(mask(brown_1980_1989_m[["Jan_tas"]],land), land), main = "brown")
+plot(crop(mask(agcd_1980_1989_m[["Jan_tas"]], land),land), main = "AGCD")
+plot(crop(mask(CHELSA_1980_1989_m[["Jan_tas"]],land),land), main = "CHELSA")
+plot(crop(mask(CHELSA_Trace21_1950_m[["Jan_tas"]],land),land), main = "CHELSA-TraCE")
+
+plot(crop(mask(brown_1980_1989_m[["Jan_tasmax"]],land), land), main = "brown")
+plot(crop(mask(agcd_1980_1989_m[["Jan_tasmax"]], land),land), main = "AGCD")
+plot(crop(mask(CHELSA_1980_1989_m[["Jan_tasmax"]],land),land), main = "CHELSA")
+plot(crop(mask(CHELSA_Trace21_1950_m[["Jan_tasmax"]],land),land), main = "CHELSA-TraCE")
+
+plot(crop(mask(brown_1980_1989_m[["Jan_tasmin"]],land), land), main = "brown")
+plot(crop(mask(agcd_1980_1989_m[["Jan_tasmin"]], land),land), main = "AGCD")
+plot(crop(mask(CHELSA_1980_1989_m[["Jan_tasmin"]],land),land), main = "CHELSA")
+plot(crop(mask(CHELSA_Trace21_1950_m[["Jan_tasmin"]],land),land), main = "CHELSA-TraCE")
+
+par(mfrow = c(1,1))
 
 # save each raster
-writeRaster(brown_1910_1989_m,
+writeRaster(brown_1910_1989_m, overwrite = TRUE,
             filename = "03_comparisons/brown_1910_1989_monthly.tif")
-writeRaster(brown_1980_1989_m,
+writeRaster(brown_1980_1989_m,overwrite = TRUE,
             filename = "03_comparisons/brown_1980_1989_monthly.tif")
-writeRaster(agcd_1910_1989_m,
+writeRaster(agcd_1910_1989_m,overwrite = TRUE,
             filename = "03_comparisons/agcd_1910_1989_monthly.tif")
-writeRaster(agcd_1980_1989_m,
+writeRaster(agcd_1980_1989_m,overwrite = TRUE,
             filename = "03_comparisons/agcd_1980_1989_monthly.tif")
-writeRaster(CHELSA_1980_1989_m,
+writeRaster(CHELSA_1980_1989_m,overwrite = TRUE,
             filename = "03_comparisons/CHELSA_1980_1989_monthly.tif")
-writeRaster(CHELSA_Trace21_1950_m,
+writeRaster(CHELSA_Trace21_1950_m,overwrite = TRUE,
             filename = "03_comparisons/CHELSA_Trace21_1950_monthly.tif")
 
 # iterate through each dataset and extract monthly averages and SD for each zone
@@ -300,38 +325,6 @@ step_summaries_roll[variable == "pr", `:=`(
 )]
 step_summaries_roll
 
-# # Split the data.table by sumstat
-# split_list <- split(step_summaries_roll, by = "sumstat", keep.by = TRUE)
-#
-# # Apply frollmean to decadal data and rename the column for each subset
-# split_list <- lapply(split_list, function(dt) {
-#   dt[, year := year(yd)]
-#   # Aggregate to yearly mean
-#   yearly_dt <- copy(dt)[, .(mean_value = mean(value, na.rm = TRUE)),
-#                         by = .(year, Koppen, climvar, MODEL, sumstat)]
-#   stat_name <- yearly_dt[["sumstat"]][1]  # assuming one stat per dt
-#   # Apply frollmean over yearly data
-#   yearly_dt[, paste0("roll_", stat_name) := frollmean(mean_value, n = 10, align = "right", hasNA = FALSE),
-#             by = .(Koppen, climvar, MODEL)]
-#   return(yearly_dt)
-# })
-# split_list
-#
-# # Combine the results back into a single data.table
-# step_summaries_roll <- rbindlist(split_list, use.names = TRUE, fill = TRUE)
-# step_summaries_roll
-# cols <- c("Koppen", "sumstat", "climvar", "MODEL")
-# step_summaries_roll[, (cols) := lapply(.SD, as.factor), .SDcols = cols]
-# summary(step_summaries_roll)
-# # step_summaries_roll[, roll_value := frollmean(.SD, n = 120, align = "right",
-# #                                               hasNA = FALSE),
-# #                     by = c("Koppen", "sumstat", "climvar", "MODEL"),
-# #                     .SDcols = "value"]
-# # step_summaries_roll
-# levels(step_summaries_roll$MODEL)
-# levels(step_summaries_roll$climvar)
-# levels(step_summaries_roll$Koppen)
-
 facet_labels <- function(variable) {
   sapply(variable, function(v) {
     if (v == "pr") {
@@ -362,7 +355,7 @@ merged[, `:=`(mean = mean[!is.na(mean)][1],
               SD = SD[!is.na(SD)][1]), by = .(Koppen, variable, MODEL)]
 
 
-p1 <- ggplot(data = step_summaries_roll[MODEL %in% c("BROWN", "AGCD"), ],
+p1 <- ggplot(data = step_summaries_roll[MODEL %in% c("BROWN"), ],
        aes(x = Year, y = roll_mean,
            group = interaction(Koppen, MODEL),
            colour = MODEL, fill = MODEL)) +
@@ -409,179 +402,213 @@ p1 <- ggplot(data = step_summaries_roll[MODEL %in% c("BROWN", "AGCD"), ],
   labs(x = "Year", y = "mean")
 p1
 
-pdf(file = "03_comparisons/zonal_means.pdf",
+pdf(file = "03_comparisons/zonal_means_2model.pdf",
     width = 14, height = 8, bg = "white",
     pagecentre = TRUE)
 print(p1)
 dev.off()
 
+# DELTA between CHELSA and Brown
+## positive values mean Karger is higher
+source("01_code/00_functions/raster_to_sds.R")
+agcd_1910_1989 <- split_raster_by_variable(rast("03_comparisons/agcd_1910_1989_monthly.tif"))
+agcd_1910_1989
+agcd_1980_1989 <- split_raster_by_variable(rast("03_comparisons/agcd_1980_1989_monthly.tif"))
+CHELSA_Trace21_1950 <- split_raster_by_variable(rast("03_comparisons/CHELSA_Trace21_1950_monthly.tif"))
+brown_1910_1989 <- split_raster_by_variable(rast("03_comparisons/brown_1910_1989_monthly.tif"))
+brown_1980_1989 <- split_raster_by_variable(rast("03_comparisons/brown_1980_1989_monthly.tif"))
+
 pdf(file = "03_comparisons/raster_means.pdf",
-    paper = "a4", bg = "white",
+    width = 9, height = 8, bg = "white",
     pagecentre = TRUE)
-{p2 <- plot(crop(mask(c(agcd_1910_1989$pr, brown_1910_1989$pr), land), land),
-           nr = 2, range = c(3.4e-06, 1.3e-04),
-           main = c("BoM", "Brown"),
-           fun = function() lines(land),
-           plg = list(title = "rainfall (kg/m2/s)", side = 4,
-                      font = 2, line = 2.5, cex = 0.8))
+{p2 <- plot(crop(mask(c(app(agcd_1910_1989$pr, mean),
+                        app(brown_1910_1989$pr, mean),
+                        app(CHELSA_Trace21_1950$pr, mean)), land), land)*3.154e7,
+            nr = 2, range = c(0, 2000),
+            col = hcl.colors(100, "GnBu", rev = TRUE),
+            main = c("BoM", "Brown", "CHELSA-TraCE"),
+            smooth = FALSE, fill_range = TRUE,
+            fun = function() lines(land),
+            plg = list(title = "rainfall (mm/year)", side = 4,
+                       font = 2, line = 2.5, cex = 0.8))
 
-p3 <- plot(crop(mask(c(agcd_1910_1989$tas, brown_1910_1989$tas), land), land),
-           nr = 2, range = c(-2, 30),
-           main = c("BoM", "Brown"),
-           fun = function() lines(land),
-           plg = list(title = "tas (deg C)", side = 4,
-                      font = 2, line = 2.5, cex = 0.8))
+  p3 <- plot(crop(mask(c(app(agcd_1910_1989$tas, mean),
+                         app(brown_1910_1989$tas, mean),
+                         app(CHELSA_Trace21_1950$tas, mean)), land), land),
+             nr = 2, range = c(5, 25),
+             col = hcl.colors(100, "Batlow"),
+             main = c("BoM", "Brown", "CHELSA-TraCE"),
+             smooth = FALSE, fill_range = TRUE,
+             fun = function() lines(land),
+             plg = list(title = "tas (deg C)", side = 4,
+                        font = 2, line = 2.5, cex = 0.8))
 
-p4 <- plot(crop(mask(c(agcd_1910_1989$tasmin, brown_1910_1989$tasmin), land), land),
-           nr = 2, range = c(-6, 27),
-           main = c("BoM", "Brown"),
-           fun = function() lines(land),
-           plg = list(title = "tasmin (deg C)", side = 4,
-                      font = 2, line = 2.5, cex = 0.8))
+  p4 <- plot(crop(mask(c(app(agcd_1910_1989$tasmax, mean),
+                         app(brown_1910_1989$tasmax, mean),
+                         app(CHELSA_Trace21_1950$tasmax, mean)), land), land),
+             nr = 2, range = c(10, 35),
+             col = hcl.colors(100, "Batlow"),
+             main = c("BoM", "Brown", "CHELSA-TraCE"),
+             smooth = FALSE, fill_range = TRUE,
+             fun = function() lines(land),
+             plg = list(title = "tasmax (deg C)", side = 4,
+                        font = 2, line = 2.5, cex = 0.8))
 
-p5 <- plot(crop(mask(c(agcd_1910_1989$tasmax, brown_1910_1989$tasmax), land), land),
-           nr = 2, range = c(2, 36),
-           main = c("BoM", "Brown"),
-           fun = function() lines(land),
-           plg = list(title = "tasmax (deg C)", side = 4,
-                      font = 2, line = 2.5, cex = 0.8))
+  p5 <- plot(crop(mask(c(app(agcd_1910_1989$tasmin, mean),
+                         app(brown_1910_1989$tasmin, mean),
+                         app(CHELSA_Trace21_1950$tasmin, mean)), land), land),
+             nr = 2, range = c(0, 25),
+             col = hcl.colors(100, "Batlow"),
+             main = c("BoM", "Brown", "CHELSA-TraCE"),
+             fun = function() lines(land),
+             smooth = FALSE, fill_range = TRUE,
+             plg = list(title = "tasmin (deg C)", side = 4,
+                        font = 2, line = 2.5, cex = 0.8))
 
-p6 <- plot(crop(mask(c(CHELSA_Trace21_1950$pr, brown_1910_1989$pr), land), land),
-           nr = 2, range = c(4.221234e-06, 1.121215e-04),
-           main = c("CHELSA TraCE", "Brown"),
-           fun = function() lines(land),
-           plg = list(title = "rainfall (kg/m2/s)", side = 4,
-                      font = 2, line = 2.5, cex = 0.8))
-
-p7 <- plot(crop(mask(c(CHELSA_Trace21_1950$tas, brown_1910_1989$tas), land), land),
-           nr = 2, range = c(-2, 30),
-           main = c("CHELSA TraCE", "Brown"),
-           fun = function() lines(land),
-           plg = list(title = "tas (deg C)", side = 4,
-                      font = 2, line = 2.5, cex = 0.8))
-
-p8 <- plot(crop(mask(c(CHELSA_Trace21_1950$tasmin, brown_1910_1989$tasmin), land), land),
-           nr = 2, range = c(-7, 29),
-           main = c("CHELSA TraCE", "Brown"),
-           fun = function() lines(land),
-           plg = list(title = "tasmin (deg C)", side = 4,
-                      font = 2, line = 2.5, cex = 0.8))
-
-p9 <- plot(crop(mask(c(CHELSA_Trace21_1950$tasmax, brown_1910_1989$tasmax), land), land),
-           nr = 2, range = c(2, 36),
-           main = c("CHELSA TraCE", "Brown"),
-           fun = function() lines(land),
-           plg = list(title = "tasmax (deg C)", side = 4,
-                      font = 2, line = 2.5, cex = 0.8))
+  # p6 <- plot(crop(mask(c(app(CHELSA_Trace21_1950$pr, mean), app(brown_1910_1989$pr, mean)), land), land)*3.154e7,
+  #            nr = 2, range = c(0, 4000),
+  #            col = hcl.colors(100, "GnBu", rev = TRUE),
+  #            main = c("CHELSA TraCE", "Brown"),
+  #            fun = function() lines(land),
+  #            smooth = FALSE, fill_range = TRUE,
+  #            plg = list(title = "rainfall (kg/m2/s)", side = 4,
+  #                       font = 2, line = 2.5, cex = 0.8))
+  #
+  # p7 <- plot(crop(mask(c(app(CHELSA_Trace21_1950$tas, mean), app(brown_1910_1989$tas, mean)), land), land),
+  #            nr = 2, range = c(3, 30),
+  #            main = c("CHELSA TraCE", "Brown"),
+  #            smooth = FALSE, fill_range = TRUE,
+  #            fun = function() lines(land),
+  #            plg = list(title = "tas (deg C)", side = 4,
+  #                       font = 2, line = 2.5, cex = 0.8))
+  #
+  # p8 <- plot(crop(mask(c(app(CHELSA_Trace21_1950$tasmin, mean), app(brown_1910_1989$tasmin, mean)), land), land),
+  #            nr = 2, range = c(-2, 29),
+  #            main = c("CHELSA TraCE", "Brown"),
+  #            smooth = FALSE, fill_range = TRUE,
+  #            fun = function() lines(land),
+  #            plg = list(title = "tasmin (deg C)", side = 4,
+  #                       font = 2, line = 2.5, cex = 0.8))
+  #
+  # p9 <- plot(crop(mask(c(app(CHELSA_Trace21_1950$tasmax, mean), app(brown_1910_1989$tasmax, mean)), land), land),
+  #            nr = 2, range = c(7, 36),
+  #            main = c("CHELSA TraCE", "Brown"),
+  #            smooth = FALSE, fill_range = TRUE,
+  #            fun = function() lines(land),
+  #            plg = list(title = "tasmax (deg C)", side = 4,
+  #                       font = 2, line = 2.5, cex = 0.8))
 }
 dev.off()
 
-qpdf::pdf_combine(input = c("03_comparisons/zonal_means.pdf",
+qpdf::pdf_combine(input = c("03_comparisons/zonal_means_2model.pdf",
                             "03_comparisons/raster_means.pdf"),
                   output = "03_comparisons/combined.pdf")
 
 regions <- unique(step_summaries_roll[["Koppen"]])
 
-# DELTA between BoM and Brown
-# if (FALSE) {
-#   delta_pr <- crop(mask(agcd_1910_1989$pr / brown_1910_1989$pr, land), land)
-#   delta_pr
-#   plot(delta_pr)
-#
-#   delta_tasmax <- crop(mask(agcd_1910_1989$tasmax - brown_1910_1989$tasmax, land), land)
-#   delta_tasmax
-#   plot(delta_tasmax)
-#
-#   delta_tasmin <- crop(mask(agcd_1910_1989$tasmin - brown_1980_1989$tasmin, land), land)
-#   delta_tasmin
-#   plot(delta_tasmin)
-#
-#   delta_tas <- crop(mask(agcd_1910_1989$tas - brown_1980_1989$tas, land), land)
-#   delta_tas
-#   plot(delta_tas)
-# }
-
-# DELTA between CHELSA and Brown
-## positive values mean Karger is higher
-source("01_code/00_functions/raster_to_sds.R")
-agcd <- split_raster_by_variable(rast("03_comparisons/agcd_1910_1989_monthly.tif"))
-agcd
-CHELSA_Trace21_1950 <- split_raster_by_variable(rast("03_comparisons/CHELSA_Trace21_1950_monthly.tif"))
-brown_1910_1989 <- split_raster_by_variable(rast("03_comparisons/brown_1910_1989_monthly.tif"))
-
 if (TRUE) {
-  delta_pr <- crop(mask(app(CHELSA_Trace21_1950$pr, mean) / app(brown_1910_1989$pr, mean), land), land)
+  delta_pr <- c(
+    crop(mask(app(CHELSA_Trace21_1950$pr, mean) / app(brown_1910_1989$pr, mean), land), land),
+    crop(mask(app(CHELSA_Trace21_1950$pr, mean) / app(agcd_1910_1989$pr, mean), land), land),
+    crop(mask(app(agcd_1980_1989$pr, mean) / app(brown_1980_1989$pr, mean), land), land))
   delta_pr # > 1 == Karger wetter
   plot(delta_pr)
 
-  delta_tasmax <- crop(mask(app(CHELSA_Trace21_1950$tasmax, mean) - app(brown_1910_1989$tasmax, mean), land), land)
+  delta_tasmax <- c(
+    crop(mask(app(CHELSA_Trace21_1950$tasmax, mean) - app(brown_1910_1989$tasmax, mean), land), land),
+    crop(mask(app(CHELSA_Trace21_1950$tasmax, mean) - app(agcd_1910_1989$tasmax, mean), land), land),
+    crop(mask(app(agcd_1980_1989$tasmax, mean) - app(brown_1980_1989$tasmax, mean), land), land))
   delta_tasmax
   hist(delta_tasmax)
   plot(delta_tasmax)
 
-  delta_tasmin <- crop(mask(app(CHELSA_Trace21_1950$tasmin, mean) - app(brown_1910_1989$tasmin, mean), land), land)
-  delta_tasmin
+  delta_tasmin <- c(
+    crop(mask(app(CHELSA_Trace21_1950$tasmin, mean) - app(brown_1910_1989$tasmin, mean), land), land),
+    crop(mask(app(CHELSA_Trace21_1950$tasmin, mean) - app(agcd_1910_1989$tasmin, mean), land), land),
+    crop(mask(app(agcd_1980_1989$tasmin, mean) - app(brown_1980_1989$tasmin, mean), land), land))
   hist(delta_tasmin)
   plot(delta_tasmin)
 
-  delta_tas <- crop(mask(app(CHELSA_Trace21_1950$tas, mean) - app(brown_1910_1989$tas, mean), land), land)
+  delta_tas <- c(
+    crop(mask(app(CHELSA_Trace21_1950$tas, mean) - app(brown_1910_1989$tas, mean), land), land),
+    crop(mask(app(CHELSA_Trace21_1950$tas, mean) - app(agcd_1910_1989$tas, mean), land), land),
+    crop(mask(app(agcd_1980_1989$tas, mean) - app(brown_1980_1989$tas, mean), land), land))
   delta_tas
   hist(delta_tas)
   plot(delta_tas)
 }
-pdf(file = "03_comparisons/comparisons_delta.pdf",
+pdf(file = "03_comparisons/comparisons_delta_2model.pdf",
     width = 10, height = 9, onefile = TRUE, bg = "white")
 par(mfrow = c(2,2), mai = c(0.5,0.5,0.5,0.5), mar = c(0.5,0.5,0.5,0.5))
-{plot(delta_pr, mar = c(5,0,0.5,0),
-     buffer = TRUE,
-     smooth = TRUE, box = TRUE, range = c(0.5, 2.5),
+{plot(delta_pr, mar = c(5,0,2,0),
+     buffer = TRUE, fill_range = TRUE,
+     main = c("CHELSA-TraCE / Brown",
+              "CHELSA-TraCE / BoM",
+              "BoM / Brown"),
+     col = hcl.colors(100, "GnBu", rev = TRUE),
+     smooth = FALSE, box = TRUE, range = c(0.5, 2.5),
      plg = list(x = "bottom",
                 cex = 1, bty = "n",
                 size = c(0.75, 1),
                 tics = "out", title = "precipitation delta"),
      fun = function() lines(land, col = "#000000"))
-plot(rescale_raster(delta_tas, new_min = -2, new_max = 5),
-     range = c(-2, 5),
+plot(delta_tas,
+     range = c(-5, 5),
+     main = c("CHELSA-TraCE - Brown",
+              "CHELSA-TraCE - BoM",
+              "BoM - Brown"),
+     col = hcl.colors(100, "Spectral", rev = TRUE),
+     fill_range = TRUE,
      buffer = TRUE,
-     mar = c(5,0,0.5,0),
-     smooth = TRUE, box = TRUE,
+     mar = c(5,0,2,0),
+     smooth = FALSE, box = TRUE,
      plg = list(x = "bottom",
                 cex = 1, bty = "n",
                 size = c(0.75, 1),
-                at = seq(-2, 5),
+                at = seq(-5, 5),
                 tics = "out", title = "temperature delta"),
      fun = function() lines(land, col = "#000000"))
-plot(rescale_raster(delta_tasmax, new_min = -3, new_max = 6),
-     range = c(-3, 6),
+plot(delta_tasmax,
+     range = c(-5, 5),
+     main = c("CHELSA-TraCE - Brown",
+              "CHELSA-TraCE - BoM",
+              "BoM - Brown"),
+     col = hcl.colors(100, "Spectral", rev = TRUE),
+     fill_range = TRUE,
      buffer = TRUE,
-     mar = c(5,0,0.5,0),
-     smooth = TRUE, box = TRUE,
+     mar = c(5,0,2,0),
+     smooth = FALSE, box = TRUE,
      plg = list(x = "bottom",
                 cex = 1, bty = "n",
                 size = c(0.75, 1),
-                at = seq(-3, 6),
-                #labels = c(-3, "", -2, "", -1, "", 0, "", 1, "", 2, "", 3),
+                at = seq(-5, 5),
                 tics = "out", title = "max temperature delta"),
      fun = function() lines(land, col = "#000000"))
-plot(rescale_raster(delta_tasmin, new_min = -2, new_max = 5),
-     range = c(-2, 5),
+plot(delta_tasmin,
+     range = c(-5, 5),
+     main = c("CHELSA-TraCE - Brown",
+              "CHELSA-TraCE - BoM",
+              "BoM - Brown"),
+     col = hcl.colors(100, "Spectral", rev = TRUE),
+     fill_range = TRUE,
      buffer = TRUE,
-     mar = c(5,0,0.5,0),
-     smooth = TRUE, box = TRUE,
+     mar = c(5,0,2,0),
+     smooth = FALSE, box = TRUE,
      plg = list(x = "bottom",
                 cex = 1, bty = "n",
                 size = c(0.75, 1),
-                at = seq(-2, 5),
+                at = seq(-5, 5),
                 tics = "out", title = "min temperature delta"),
      fun = function() lines(land, col = "#000000"))
 }
 dev.off()
 
 # common mask to mask all three datasets
-comm <- c(agcd$pr[[1]], brown_1910_1989$pr[[1]], CHELSA_Trace21_1950$pr[[1]],
-          agcd$tas[[1]], brown_1910_1989$tas[[1]], CHELSA_Trace21_1950$tas[[1]],
-          agcd$tasmin[[1]], brown_1910_1989$tasmin[[1]], CHELSA_Trace21_1950$tasmin[[1]],
-          agcd$tasmax[[1]], brown_1910_1989$tasmax[[1]], CHELSA_Trace21_1950$tasmax[[1]])
+comm <- c(agcd_1980_1989$pr[[1]], brown_1980_1989$pr[[1]], CHELSA_Trace21_1950$pr[[1]],
+          agcd_1980_1989$tas[[1]], brown_1980_1989$tas[[1]], CHELSA_Trace21_1950$tas[[1]],
+          agcd_1980_1989$tasmin[[1]], brown_1980_1989$tasmin[[1]], CHELSA_Trace21_1950$tasmin[[1]],
+          agcd_1980_1989$tasmax[[1]], brown_1980_1989$tasmax[[1]], CHELSA_Trace21_1950$tasmax[[1]])
+comm
 comm_sum <- app(comm, function(i) sum(!is.na(i)))
 comm_sum <- ifel(comm_sum == 12, 1, NA)
 comm_mask <- mask(comm_sum, land)
@@ -697,11 +724,11 @@ colours <- c(
   AirTemp = "#D55E00",
   MinTemp = "#009E73",
   MaxTemp = "#CC79A7")
-pdf(file = "03_comparisons/comparisons_taylor.pdf",
-    width = 8, height = 8, onefile = TRUE, bg = "white")
+pdf(file = "03_comparisons/comparisons_taylor_updated.pdf",
+    width = 8, height = 9, onefile = TRUE, bg = "white")
 par(mai = c(0.5,0.5,0.5,0.5), mar = c(0.5,0.5,0.5,0.5))
-{taylor_from_sds_monthly(obs_sds = agcd,
-                        mod_sds = brown_1910_1989,
+{taylor_from_sds_monthly(obs_sds = agcd_1980_1989,
+                        mod_sds = brown_1980_1989,
                         var_name = "tas",
                         col_palette = colours[2],
                         use_mask = comm_mask,
@@ -710,8 +737,8 @@ par(mai = c(0.5,0.5,0.5,0.5), mar = c(0.5,0.5,0.5,0.5))
                         main = "", ref.sd = TRUE,
                         sd.method = "population",
                         normalize = TRUE, mar = c(4,4,0,0))
-taylor_from_sds_monthly(obs_sds = agcd,
-                        mod_sds = brown_1910_1989,
+taylor_from_sds_monthly(obs_sds = agcd_1980_1989,
+                        mod_sds = brown_1980_1989,
                         var_name = "tasmin",
                         col_palette = colours[3],
                         use_mask = comm_mask,
@@ -720,8 +747,8 @@ taylor_from_sds_monthly(obs_sds = agcd,
                         main = "", ref.sd = TRUE,
                         sd.method = "population",
                         normalize = TRUE, mar = c(4,4,0,0))
-taylor_from_sds_monthly(obs_sds = agcd,
-                        mod_sds = brown_1910_1989,
+taylor_from_sds_monthly(obs_sds = agcd_1980_1989,
+                        mod_sds = brown_1980_1989,
                         var_name = "tasmax",
                         col_palette = colours[4],
                         use_mask = comm_mask,
@@ -730,8 +757,8 @@ taylor_from_sds_monthly(obs_sds = agcd,
                         main = "", ref.sd = TRUE,
                         sd.method = "population",
                         normalize = TRUE, mar = c(4,4,0,0))
-taylor_from_sds_monthly(obs_sds = agcd,
-                        mod_sds = brown_1910_1989,
+taylor_from_sds_monthly(obs_sds = agcd_1980_1989,
+                        mod_sds = brown_1980_1989,
                         var_name = "pr",
                         col_palette = colours[1],
                         use_mask = comm_mask,
@@ -781,14 +808,14 @@ taylor_from_sds_monthly(obs_sds = CHELSA_Trace21_1950,
                         main = "", ref.sd = TRUE,
                         sd.method = "population",
                         normalize = TRUE, mar = c(4,4,0,0))
-legend(x = 0.07, y = 1.5,
+legend(x = 0.07, y = 1.2,
        legend = c("precipitation", "mean temperature",
                   "minimum temperature", "maximum temperature"),
        col = colours,
        pch = 19, box.lwd = 0,box.lty = 0,box.col = NA,
        pt.cex = 1.5,
        ncol = 1)
-legend(x = 0.07, y = 1.25,
+legend(x = 0.07, y = 1.0,
        legend = c("Aust. gridded climate data",
                   "CHELSA-TraCE21k"),
        col = "black",

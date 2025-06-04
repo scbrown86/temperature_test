@@ -37,17 +37,6 @@ koppen_summary <- function(grids) {
         rz[, variable := varnames(vars[[j]])[1]]
       }
       rz[, Year := as.integer(sapply(strsplit(x = as.character(Year), "_"), tail, 1))]
-      # k_sf <- st_as_sf(koppen)
-      # k_sf <- st_transform(k_sf, crs = st_crs(vj))
-      # vje <- setDT(exact_extract(vj, k_sf,
-      #                            fun = c("mean", "stdev", "coefficient_of_variation"),
-      #                            append_cols = "Koppen"))
-      # vje <- melt(vje, id.vars = "Koppen")
-      # vje[, c("sumstat", "rest") := tstrsplit(as.character(vje[["variable"]]),
-      #                                         "\\.(?=[^\\.]+_[0-9]+$)", perl = TRUE)]
-      # vje[, c("climvar", "timestep") := tstrsplit(rest, "_")]
-      # vje[, timestep := as.integer(timestep)][, rest := NULL][, variable := NULL]
-      # vje <- merge(vje, zt, by = "timestep", all.x = TRUE, all.y = FALSE)
       fout <- file.path(sprintf("scratch/var_extract_%s_%s.RDS", i, j))
       saveRDS(rz, fout)
       return(rz)
@@ -57,3 +46,5 @@ koppen_summary <- function(grids) {
   })
   return(ext)
 }
+
+require(exactextractr)
